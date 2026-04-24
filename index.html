@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>製令管理系統 V8.4 - 產線名稱自動對照</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
+        
+        .tab-active { background-color: #1e40af; color: white; border-color: #1e40af; }
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: none; }
+        
+        .table-bordered th, .table-bordered td { border: 1px solid #e2e8f0; }
+        .table-striped tbody tr:nth-child(even) { background-color: #f8fafc; }
+        .table-hover tbody tr:hover { background-color: #f1f5f9; }
+
+        .input-cell {
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            background-color: rgba(241, 245, 249, 0.5);
+        }
+        .input-cell:focus {
+            background-color: white;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        .picker-tab-active {
+            border-bottom: 4px solid #2563eb;
+            color: #2563eb;
+            background-color: #eff6ff;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="toast" class="bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl font-bold flex items-center gap-2">
+        <span id="toastIcon">✨</span>
+        <span id="toastMsg">系統通知</span>
+    </div>
+
+    <!-- 導航列 -->
+    <nav class="bg-white border-b-2 border-blue-600 p-4 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-[1600px] mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-800 p-2 rounded-lg text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                </div>
+                <h1 class="font-black text-2xl tracking-tighter text-slate-800">生產製令排產 <span class="text-blue-600">V8.4</span></h1>
+            </div>
+            <div class="flex bg-slate-200 p-1 rounded-xl">
+                <button onclick="switchTab('front')" id="btn-front" class="px-6 py-2 rounded-lg font-black text-sm transition-all tab-active">排產作業</button>
+                <button onclick="switchTab('back')" id="btn-back" class="px-6 py-2 rounded-lg font-black text-sm transition-all text-slate-600 hover:bg-white/50">品項庫管理</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-[1600px] mx-auto p-6">
+        
+        <!-- 前台：排產清單 -->
+        <section id="tab-front" class="tab-content">
+            <div class="flex flex-col md:flex-row justify-between items-end gap-4 mb-6">
+                <div class="flex flex-wrap gap-4 items-end">
+                    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+                        <label class="text-[11px] font-black text-blue-600 uppercase mb-1 block">預計生產日期</label>
+                        <input type="date" id="orderDate" class="font-bold text-slate-700 outline-none cursor-pointer">
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+                        <label class="text-[11px] font-black text-slate-400 uppercase mb-1 block">顯示群組篩選</label>
+                        <select id="frontGroupFilter" onchange="filterFrontTable()" class="font-bold text-slate-700 outline-none min-w-[140px] cursor-pointer">
+                            <option value="ALL">全部顯示</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button id="delBtn" onclick="deleteSelected()" class="hidden bg-rose-100 text-rose-700 px-5 py-2.5 rounded-xl font-bold hover:bg-rose-700 hover:text-white transition-all text-sm border border-rose-200 shadow-sm">
+                        移除所選 (<span id="selCount">0</span>)
+                    </button>
+                    <button onclick="openPicker()" class="bg-blue-600 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all text-sm flex items-center gap-2">
+                        + 新增生產項目
+                    </button>
+                    <button onclick="exportExcel()" class="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+                        匯出 EXCEL
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-xl border-2 border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left table-bordered table-striped table-hover">
+                        <thead class="bg-slate-800 text-white text-[12px] font-bold uppercase tracking-wider">
+                            <tr>
+                                <th class="p-3 w-12 text-center border-r border-slate-700"><input type="checkbox" onchange="toggleSelectAll(this)" class="w-4 h-4 rounded accent-blue-400"></th>
+                                <th class="p-3 w-16 text-center border-r border-slate-700">重工</th>
+                                <th class="p-3 w-48 text-center border-r border-slate-700">生產線 (代號/名稱)</th>
+                                <th class="p-3 w-40 border-r border-slate-700">品項編號</th>
+                                <th class="p-3 border-r border-slate-700">成品品名</th>
+                                <th class="p-3 w-16 text-center border-r border-slate-700">單位</th>
+                                <th class="p-3 w-32 text-center border-r border-slate-700">預計產量</th>
+                                <th class="p-3 border-r border-slate-700">備註</th>
+                                <th class="p-3 w-24 text-center">群組</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productionBody" class="text-sm"></tbody>
+                    </table>
+                </div>
+                <div id="emptyState" class="py-24 text-center bg-slate-50">
+                    <div class="text-6xl mb-4">📋</div>
+                    <p class="text-slate-400 font-bold italic">目前無排產項目，請點擊上方按鈕開始作業</p>
+                </div>
+            </div>
+            <div class="mt-4 flex justify-between items-center px-2">
+                <p class="text-[11px] text-slate-500 font-medium">※ 生產線提示：FAX-理貨剪菇、FAY-理貨挑秤、FAZ-理貨。</p>
+                <div id="totalStats" class="text-xs font-bold text-slate-400"></div>
+            </div>
+        </section>
+
+        <!-- 後台：資料庫管理 -->
+        <section id="tab-back" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-xl font-black text-slate-800">品項資料庫</h2>
+                    <select id="dbGroupFilter" onchange="renderDBList()" class="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-600 outline-none">
+                        <option value="ALL">所有群組</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20">匯入品項 (.xlsx)</button>
+                    <button onclick="clearDatabase()" class="text-rose-500 px-4 py-2 font-bold text-sm hover:bg-rose-50 rounded-xl transition-all border border-rose-100">清空資料庫</button>
+                    <input type="file" id="fileInput" accept=".csv, .xlsx" onchange="handleFileUpload(event)" class="hidden">
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <table class="w-full text-left table-bordered table-striped">
+                    <thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-black text-slate-500 uppercase">
+                        <tr>
+                            <th class="p-4">群組</th>
+                            <th class="p-4">成品編號</th>
+                            <th class="p-4">品名規格</th>
+                            <th class="p-4 w-28 text-center">預設產線</th>
+                            <th class="p-4 w-24 text-center">單位</th>
+                            <th class="p-4 w-20 text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dbTableBody" class="text-sm font-medium text-slate-600"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- 品項選擇器 Modal -->
+    <div id="pickerModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="closePicker()"></div>
+        <div class="bg-white w-full max-w-5xl h-[85vh] rounded-[2rem] shadow-2xl z-[101] overflow-hidden flex flex-col border-4 border-blue-600">
+            <div class="p-6 border-b border-slate-100 bg-slate-50 flex flex-col gap-4">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-800 tracking-tight">選取欲排產品項</h3>
+                    </div>
+                    <button onclick="closePicker()" class="w-10 h-10 flex items-center justify-center bg-white rounded-full text-slate-400 hover:text-rose-500 shadow-sm transition-all">✕</button>
+                </div>
+                <div class="relative">
+                    <input type="text" id="pickerSearch" oninput="renderPickerItems()" placeholder="輸入關鍵字搜尋..." class="bg-white border-2 border-slate-200 rounded-xl pl-4 pr-4 py-3 font-bold text-sm outline-none w-full focus:border-blue-500 shadow-inner">
+                </div>
+            </div>
+            <div id="pickerTabs" class="flex items-center gap-1 px-6 bg-slate-100 border-b border-slate-200 overflow-x-auto no-scrollbar"></div>
+            <div class="flex-1 overflow-y-auto bg-white">
+                <table class="w-full text-left table-bordered table-hover">
+                    <thead class="sticky top-0 bg-slate-800 text-white text-[11px] font-bold z-10">
+                        <tr>
+                            <th class="px-6 py-3 w-16 text-center">狀態</th>
+                            <th class="px-6 py-3 w-36">編號</th>
+                            <th class="px-6 py-3">成品品名</th>
+                            <th class="px-6 py-3 w-24 text-center">單位</th>
+                            <th class="px-6 py-3 w-28 text-center">群組</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pickerListBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                </table>
+            </div>
+            <div class="p-6 border-t-2 border-slate-100 bg-slate-50 flex justify-between items-center">
+                <div class="bg-blue-600 px-6 py-2 rounded-2xl flex items-center gap-3 shadow-lg">
+                    <span class="text-xs font-black text-blue-100 uppercase">已選取</span>
+                    <span class="text-white font-black text-2xl" id="pickerSelectCount">0</span>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="closePicker()" class="px-6 py-3 font-bold text-slate-400 hover:text-slate-600 transition-colors">取消</button>
+                    <button onclick="confirmSelection()" class="bg-blue-600 text-white px-12 py-3 rounded-2xl font-black shadow-xl hover:bg-blue-800 transition-all">確認加入排產</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_KEY = "PROD_SYSTEM_V8_4_STORAGE";
+        const LINE_MAP = {
+            "FAX": "理貨剪菇線",
+            "FAY": "理貨挑秤線",
+            "FAZ": "理貨"
+        };
+        
+        let masterDB = [];
+        let selectionQueue = []; 
+        let currentPickerGroup = "ALL";
+
+        window.onload = () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('orderDate').value = today;
+            loadData();
+        };
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('tab-active'));
+            document.getElementById(`btn-${tab}`).classList.add('tab-active');
+            if(tab === 'back') renderDBList();
+        }
+
+        function loadData() {
+            const data = localStorage.getItem(DB_KEY);
+            masterDB = data ? JSON.parse(data) : [];
+            updateGroupFilters();
+        }
+
+        function saveData() {
+            localStorage.setItem(DB_KEY, JSON.stringify(masterDB));
+            updateGroupFilters();
+        }
+
+        function updateGroupFilters() {
+            const groups = [...new Set(masterDB.map(i => i.group))].sort();
+            const dbFilter = document.getElementById('dbGroupFilter');
+            dbFilter.innerHTML = '<option value="ALL">所有群組</option>';
+            groups.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g; opt.innerText = g;
+                dbFilter.appendChild(opt);
+            });
+        }
+
+        function updateFrontGroupFilter() {
+            const rows = document.querySelectorAll('#productionBody tr');
+            const groups = new Set();
+            rows.forEach(r => groups.add(r.dataset.group));
+            
+            const filter = document.getElementById('frontGroupFilter');
+            const currentVal = filter.value;
+            filter.innerHTML = '<option value="ALL">全部顯示</option>';
+            
+            Array.from(groups).sort().forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g; opt.innerText = g;
+                filter.appendChild(opt);
+            });
+            
+            if(groups.has(currentVal)) filter.value = currentVal;
+            else filter.value = "ALL";
+            
+            filterFrontTable();
+        }
+
+        function filterFrontTable() {
+            const filterVal = document.getElementById('frontGroupFilter').value;
+            const rows = document.querySelectorAll('#productionBody tr');
+            rows.forEach(r => {
+                r.classList.toggle('hidden', filterVal !== "ALL" && r.dataset.group !== filterVal);
+            });
+            updateStats();
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const workbook = XLSX.read(evt.target.result, { type: 'binary' });
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                masterDB = rows.map(r => ({
+                    id: String(r['成品品項'] || r['成品編號'] || ''),
+                    name: String(r['成品品名'] || '').replace(/\?/g, ''),
+                    line: r['生產線代號'] || 'FAZ',
+                    specCode: r['規格代號'] || '01',
+                    unit: r['規格單位'] || 'kg',
+                    group: r['群組'] || '預備單'
+                })).filter(i => i.id);
+                saveData();
+                renderDBList();
+                showToast("資料庫導入成功", "✅");
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function renderDBList() {
+            const filterVal = document.getElementById('dbGroupFilter').value;
+            const tbody = document.getElementById('dbTableBody');
+            tbody.innerHTML = '';
+            const filtered = filterVal === 'ALL' ? masterDB : masterDB.filter(i => i.group === filterVal);
+            filtered.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="p-4 text-xs font-bold text-slate-400 border-r">${item.group}</td>
+                    <td class="p-4 font-mono text-xs border-r">${item.id}</td>
+                    <td class="p-4 font-bold text-slate-800 border-r">${item.name}</td>
+                    <td class="p-4 text-center border-r font-bold text-blue-600">${item.line} <span class="text-[10px] text-slate-400 ml-1">(${LINE_MAP[item.line] || ''})</span></td>
+                    <td class="p-4 text-center text-slate-400 font-bold border-r">${item.unit}</td>
+                    <td class="p-4 text-center"><button onclick="deleteDBItem('${item.id}', '${item.unit}')" class="text-rose-400 hover:text-rose-600">✕</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteDBItem(id, unit) {
+            masterDB = masterDB.filter(i => !(i.id === id && i.unit === unit));
+            saveData();
+            renderDBList();
+        }
+
+        function openPicker() {
+            if(masterDB.length === 0) return showToast("請先匯入品項", "⚠️");
+            selectionQueue = [];
+            currentPickerGroup = "ALL";
+            document.getElementById('pickerModal').classList.remove('hidden');
+            renderPickerTabs();
+            renderPickerItems();
+            updatePickerUI();
+        }
+
+        function renderPickerTabs() {
+            const groups = ["ALL", ...new Set(masterDB.map(i => i.group))].sort();
+            const container = document.getElementById('pickerTabs');
+            container.innerHTML = '';
+            groups.forEach(g => {
+                const btn = document.createElement('button');
+                btn.className = `px-6 py-4 text-sm font-black transition-all border-b-4 border-transparent text-slate-400`;
+                if(g === currentPickerGroup) btn.classList.add('picker-tab-active');
+                btn.innerText = g === "ALL" ? "全部" : g;
+                btn.onclick = () => { currentPickerGroup = g; renderPickerTabs(); renderPickerItems(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderPickerItems() {
+            const kw = document.getElementById('pickerSearch').value.toLowerCase();
+            const tbody = document.getElementById('pickerListBody');
+            tbody.innerHTML = '';
+            let filtered = masterDB;
+            if(currentPickerGroup !== "ALL") filtered = filtered.filter(i => i.group === currentPickerGroup);
+            if(kw) filtered = filtered.filter(i => i.name.toLowerCase().includes(kw) || i.id.toLowerCase().includes(kw));
+
+            filtered.forEach(item => {
+                const compositeKey = `${item.id}|${item.unit}`;
+                const isSelected = selectionQueue.indexOf(compositeKey) > -1;
+                const tr = document.createElement('tr');
+                tr.className = `cursor-pointer hover:bg-blue-50 ${isSelected ? 'bg-blue-50/80' : ''}`;
+                tr.onclick = () => {
+                    const idx = selectionQueue.indexOf(compositeKey);
+                    if(idx > -1) selectionQueue.splice(idx, 1);
+                    else selectionQueue.push(compositeKey);
+                    renderPickerItems();
+                    updatePickerUI();
+                };
+                tr.innerHTML = `
+                    <td class="px-6 py-3 text-center border-r">
+                        ${isSelected ? `<span class="bg-blue-600 text-white w-6 h-6 inline-flex items-center justify-center rounded-full text-[10px] font-black">✓</span>` : `<div class="w-6 h-6 border-2 border-slate-200 rounded-full inline-block"></div>`}
+                    </td>
+                    <td class="px-6 py-3 font-mono text-xs text-slate-500 border-r">${item.id}</td>
+                    <td class="px-6 py-3 font-bold text-slate-800 border-r">${item.name}</td>
+                    <td class="px-6 py-3 text-center text-slate-400 font-bold border-r">${item.unit}</td>
+                    <td class="px-6 py-3 text-center"><span class="px-2 py-0.5 bg-slate-100 text-slate-400 rounded text-[10px] font-bold">${item.group}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updatePickerUI() {
+            document.getElementById('pickerSelectCount').innerText = selectionQueue.length;
+        }
+
+        function closePicker() { document.getElementById('pickerModal').classList.add('hidden'); }
+
+        function confirmSelection() {
+            if(selectionQueue.length === 0) return closePicker();
+            const tbody = document.getElementById('productionBody');
+            document.getElementById('emptyState').classList.add('hidden');
+
+            selectionQueue.forEach(key => {
+                const [id, unit] = key.split('|');
+                const item = masterDB.find(i => i.id === id && i.unit === unit);
+                if(!item) return;
+
+                const tr = document.createElement('tr');
+                tr.dataset.id = item.id;
+                tr.dataset.unit = item.unit;
+                tr.dataset.group = item.group;
+                tr.className = "hover:bg-blue-50/30 transition-all";
+                
+                // 生產線下拉選單 HTML
+                let lineOptions = "";
+                Object.keys(LINE_MAP).forEach(code => {
+                    lineOptions += `<option value="${code}" ${item.line === code ? 'selected' : ''}>${code} (${LINE_MAP[code]})</option>`;
+                });
+
+                tr.innerHTML = `
+                    <td class="p-3 text-center border-r border-slate-200"><input type="checkbox" onchange="updateSelUI()" class="row-check w-4 h-4 accent-blue-600"></td>
+                    <td class="p-3 text-center border-r border-slate-200"><input type="checkbox" class="row-rework w-4 h-4 accent-rose-500"></td>
+                    <td class="p-3 border-r border-slate-200">
+                        <select class="row-line w-full bg-transparent font-bold text-blue-600 outline-none cursor-pointer text-sm">
+                            ${lineOptions}
+                        </select>
+                    </td>
+                    <td class="p-3 font-mono text-xs text-slate-400 border-r border-slate-200">${item.id}</td>
+                    <td class="p-3 font-bold text-slate-800 border-r border-slate-200 row-name">${item.name}</td>
+                    <td class="p-3 text-center text-slate-400 font-bold border-r border-slate-200">${item.unit}</td>
+                    <td class="p-3 border-r border-slate-200"><input type="number" class="row-qty w-full p-1 text-right font-black text-blue-700 outline-none input-cell rounded" placeholder="0"></td>
+                    <td class="p-3 border-r border-slate-200"><input type="text" class="row-note w-full p-1 text-xs outline-none input-cell rounded" placeholder="..."></td>
+                    <td class="p-3 text-center"><span class="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black">${item.group}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            closePicker();
+            updateFrontGroupFilter();
+            updateSelUI();
+            updateStats();
+            showToast(`已新增 ${selectionQueue.length} 筆`, "🚚");
+        }
+
+        function updateSelUI() {
+            const checks = document.querySelectorAll('.row-check:checked');
+            document.getElementById('selCount').innerText = checks.length;
+            document.getElementById('delBtn').classList.toggle('hidden', checks.length === 0);
+        }
+
+        function toggleSelectAll(el) {
+            const visibleChecks = document.querySelectorAll('#productionBody tr:not(.hidden) .row-check');
+            visibleChecks.forEach(c => c.checked = el.checked);
+            updateSelUI();
+        }
+
+        function deleteSelected() {
+            if(confirm("確定移除勾選的項目？")) {
+                document.querySelectorAll('.row-check:checked').forEach(c => c.closest('tr').remove());
+                updateFrontGroupFilter();
+                updateSelUI();
+                updateStats();
+                if(document.getElementById('productionBody').children.length === 0) document.getElementById('emptyState').classList.remove('hidden');
+            }
+        }
+
+        function updateStats() {
+            const visibleRows = document.querySelectorAll('#productionBody tr:not(.hidden)');
+            document.getElementById('totalStats').innerText = `目前清單共 ${visibleRows.length} 筆項目`;
+        }
+
+        function exportExcel() {
+            const allRows = document.querySelectorAll('#productionBody tr');
+            if (allRows.length === 0) return showToast("清單目前無資料", "❌");
+            
+            const selectedChecks = document.querySelectorAll('#productionBody tr .row-check:checked');
+            let targetRows = [];
+            if (selectedChecks.length > 0) {
+                selectedChecks.forEach(chk => targetRows.push(chk.closest('tr')));
+            } else {
+                allRows.forEach(row => { if(!row.classList.contains('hidden')) targetRows.push(row); });
+            }
+
+            const date = document.getElementById('orderDate').value.replace(/-/g, '/');
+            const exportData = [["預計開工日", "性質", "重工工單", "客戶代號", "廠別代號", "生產線代號", "廠商代號", "成品品項", "成品品名", "規格代號", "規格單位", "等級", "倉庫代號", "倉庫名稱", "預計產量", "加工單價", "單據備註"]];
+            
+            targetRows.forEach(r => {
+                const id = r.dataset.id;
+                const unit = r.dataset.unit;
+                const m = masterDB.find(i => i.id === id && i.unit === unit) || {};
+                exportData.push([
+                    date, "廠內", r.querySelector('.row-rework').checked ? "Y" : "N", "", "FA", 
+                    r.querySelector('.row-line').value, "", id, r.querySelector('.row-name').innerText,
+                    m.specCode || "01", unit, "", "A202", "",
+                    r.querySelector('.row-qty').value || 0, "", r.querySelector('.row-note').value
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "ProdOrder");
+            XLSX.writeFile(wb, `生產工單_${date.replace(/\//g,'')}.xlsx`);
+            showToast("匯出完成", "📊");
+        }
+
+        function showToast(msg, icon = "✨") {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            document.getElementById('toastIcon').innerText = icon;
+            t.style.display = 'flex';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+
+        function clearDatabase() {
+            if(confirm("確定清空所有資料？")) { masterDB = []; saveData(); renderDBList(); }
+        }
+    </script>
+</body>
+</html>
