@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,20 +9,46 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
-        
-        .tab-active { background-color: #1e40af; color: white; border-color: #1e40af; }
-        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: none; }
-        
-        .table-bordered th, .table-bordered td { border: 1px solid #e2e8f0; }
-        .table-striped tbody tr:nth-child(even) { background-color: #f8fafc; }
-        .table-hover tbody tr:hover { background-color: #f1f5f9; }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        .tab-active {
+            background-color: #1e40af;
+            color: white;
+            border-color: #1e40af;
+        }
+
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: none;
+        }
+
+        .table-bordered th,
+        .table-bordered td {
+            border: 1px solid #e2e8f0;
+        }
+
+        .table-striped tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f1f5f9;
+        }
 
         .input-cell {
             border: 1px solid transparent;
             transition: all 0.2s;
             background-color: rgba(241, 245, 249, 0.5);
         }
+
         .input-cell:focus {
             background-color: white;
             border-color: #3b82f6;
@@ -34,9 +61,12 @@
             background-color: #eff6ff;
         }
 
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
     </style>
 </head>
+
 <body class="min-h-screen">
 
     <div id="toast" class="bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl font-bold flex items-center gap-2">
@@ -49,19 +79,26 @@
         <div class="max-w-[1600px] mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <div class="bg-blue-800 p-2 rounded-lg text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                        </path>
+                    </svg>
                 </div>
-                <h1 class="font-black text-2xl tracking-tighter text-slate-800">生產製令排產 <span class="text-blue-600">V8.4</span></h1>
+                <h1 class="font-black text-2xl tracking-tighter text-slate-800">生產製令排產 <span
+                        class="text-blue-600">V8.4</span></h1>
             </div>
             <div class="flex bg-slate-200 p-1 rounded-xl">
-                <button onclick="switchTab('front')" id="btn-front" class="px-6 py-2 rounded-lg font-black text-sm transition-all tab-active">排產作業</button>
-                <button onclick="switchTab('back')" id="btn-back" class="px-6 py-2 rounded-lg font-black text-sm transition-all text-slate-600 hover:bg-white/50">品項庫管理</button>
+                <button onclick="switchTab('front')" id="btn-front"
+                    class="px-6 py-2 rounded-lg font-black text-sm transition-all tab-active">排產作業</button>
+                <button onclick="switchTab('back')" id="btn-back"
+                    class="px-6 py-2 rounded-lg font-black text-sm transition-all text-slate-600 hover:bg-white/50">品項庫管理</button>
             </div>
         </div>
     </nav>
 
     <main class="max-w-[1600px] mx-auto p-6">
-        
+
         <!-- 前台：排產清單 -->
         <section id="tab-front" class="tab-content">
             <div class="flex flex-col md:flex-row justify-between items-end gap-4 mb-6">
@@ -72,20 +109,38 @@
                     </div>
                     <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
                         <label class="text-[11px] font-black text-slate-400 uppercase mb-1 block">顯示群組篩選</label>
-                        <select id="frontGroupFilter" onchange="filterFrontTable()" class="font-bold text-slate-700 outline-none min-w-[140px] cursor-pointer">
+                        <select id="frontGroupFilter" onchange="filterFrontTable()"
+                            class="font-bold text-slate-700 outline-none min-w-[140px] cursor-pointer">
                             <option value="ALL">全部顯示</option>
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="flex items-center gap-3">
-                    <button id="delBtn" onclick="deleteSelected()" class="hidden bg-rose-100 text-rose-700 px-5 py-2.5 rounded-xl font-bold hover:bg-rose-700 hover:text-white transition-all text-sm border border-rose-200 shadow-sm">
-                        移除所選 (<span id="selCount">0</span>)
-                    </button>
-                    <button onclick="openPicker()" class="bg-blue-600 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all text-sm flex items-center gap-2">
+                    <div id="batchActions"
+                        class="hidden flex items-center gap-2 bg-blue-50 p-1.5 rounded-2xl border border-blue-100">
+                        <select id="batchLine"
+                            class="bg-white border border-blue-200 rounded-xl px-3 py-1.5 font-bold text-blue-600 text-xs outline-none focus:ring-2 ring-blue-500/20">
+                            <option value="">批次修改產線...</option>
+                            <option value="FAX">FAX (理貨剪菇)</option>
+                            <option value="FAY">FAY (理貨挑秤)</option>
+                            <option value="FAZ">FAZ (理貨)</option>
+                        </select>
+                        <button onclick="applyBatchLine()"
+                            class="bg-blue-600 text-white px-4 py-1.5 rounded-xl font-black text-xs hover:bg-blue-700 transition-all shadow-sm">套用</button>
+                        <div class="w-px h-4 bg-blue-200 mx-1"></div>
+                        <button onclick="deleteSelected()"
+                            class="text-rose-600 px-3 py-1.5 rounded-xl font-bold hover:bg-rose-50 transition-all text-xs">
+                            移除 (<span id="selCount">0</span>)
+                        </button>
+                    </div>
+                    <button id="delBtn" class="hidden"></button> <!-- 保留 ID 避免噴錯 -->
+                    <button onclick="openPicker()"
+                        class="bg-blue-600 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all text-sm flex items-center gap-2">
                         + 新增生產項目
                     </button>
-                    <button onclick="exportExcel()" class="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+                    <button onclick="exportExcel()"
+                        class="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/20">
                         匯出 EXCEL
                     </button>
                 </div>
@@ -96,7 +151,8 @@
                     <table class="w-full text-left table-bordered table-striped table-hover">
                         <thead class="bg-slate-800 text-white text-[12px] font-bold uppercase tracking-wider">
                             <tr>
-                                <th class="p-3 w-12 text-center border-r border-slate-700"><input type="checkbox" onchange="toggleSelectAll(this)" class="w-4 h-4 rounded accent-blue-400"></th>
+                                <th class="p-3 w-12 text-center border-r border-slate-700"><input type="checkbox"
+                                        onchange="toggleSelectAll(this)" class="w-4 h-4 rounded accent-blue-400"></th>
                                 <th class="p-3 w-16 text-center border-r border-slate-700">重工</th>
                                 <th class="p-3 w-48 text-center border-r border-slate-700">生產線 (代號/名稱)</th>
                                 <th class="p-3 w-40 border-r border-slate-700">品項編號</th>
@@ -123,23 +179,30 @@
 
         <!-- 後台：資料庫管理 -->
         <section id="tab-back" class="tab-content hidden">
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div
+                class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div class="flex items-center gap-4">
                     <h2 class="text-xl font-black text-slate-800">品項資料庫</h2>
-                    <select id="dbGroupFilter" onchange="renderDBList()" class="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-600 outline-none">
+                    <select id="dbGroupFilter" onchange="renderDBList()"
+                        class="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 font-bold text-slate-600 outline-none">
                         <option value="ALL">所有群組</option>
                     </select>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20">匯入品項 (.xlsx)</button>
-                    <button onclick="clearDatabase()" class="text-rose-500 px-4 py-2 font-bold text-sm hover:bg-rose-50 rounded-xl transition-all border border-rose-100">清空資料庫</button>
-                    <input type="file" id="fileInput" accept=".csv, .xlsx" onchange="handleFileUpload(event)" class="hidden">
+                    <button onclick="document.getElementById('fileInput').click()"
+                        class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20">匯入品項
+                        (.xlsx)</button>
+                    <button onclick="clearDatabase()"
+                        class="text-rose-500 px-4 py-2 font-bold text-sm hover:bg-rose-50 rounded-xl transition-all border border-rose-100">清空資料庫</button>
+                    <input type="file" id="fileInput" accept=".csv, .xlsx" onchange="handleFileUpload(event)"
+                        class="hidden">
                 </div>
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <table class="w-full text-left table-bordered table-striped">
-                    <thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-black text-slate-500 uppercase">
+                    <thead
+                        class="bg-slate-50 border-b border-slate-200 text-[11px] font-black text-slate-500 uppercase">
                         <tr>
                             <th class="p-4">群組</th>
                             <th class="p-4">成品編號</th>
@@ -158,24 +221,32 @@
     <!-- 品項選擇器 Modal -->
     <div id="pickerModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onclick="closePicker()"></div>
-        <div class="bg-white w-full max-w-5xl h-[85vh] rounded-[2rem] shadow-2xl z-[101] overflow-hidden flex flex-col border-4 border-blue-600">
+        <div
+            class="bg-white w-full max-w-5xl h-[85vh] rounded-[2rem] shadow-2xl z-[101] overflow-hidden flex flex-col border-4 border-blue-600">
             <div class="p-6 border-b border-slate-100 bg-slate-50 flex flex-col gap-4">
                 <div class="flex justify-between items-start">
                     <div>
                         <h3 class="text-2xl font-black text-slate-800 tracking-tight">選取欲排產品項</h3>
                     </div>
-                    <button onclick="closePicker()" class="w-10 h-10 flex items-center justify-center bg-white rounded-full text-slate-400 hover:text-rose-500 shadow-sm transition-all">✕</button>
+                    <button onclick="closePicker()"
+                        class="w-10 h-10 flex items-center justify-center bg-white rounded-full text-slate-400 hover:text-rose-500 shadow-sm transition-all">✕</button>
                 </div>
                 <div class="relative">
-                    <input type="text" id="pickerSearch" oninput="renderPickerItems()" placeholder="輸入關鍵字搜尋..." class="bg-white border-2 border-slate-200 rounded-xl pl-4 pr-4 py-3 font-bold text-sm outline-none w-full focus:border-blue-500 shadow-inner">
+                    <input type="text" id="pickerSearch" oninput="renderPickerItems()" placeholder="輸入關鍵字搜尋..."
+                        class="bg-white border-2 border-slate-200 rounded-xl pl-4 pr-4 py-3 font-bold text-sm outline-none w-full focus:border-blue-500 shadow-inner">
                 </div>
             </div>
-            <div id="pickerTabs" class="flex items-center gap-1 px-6 bg-slate-100 border-b border-slate-200 overflow-x-auto no-scrollbar"></div>
+            <div id="pickerTabs"
+                class="flex items-center gap-1 px-6 bg-slate-100 border-b border-slate-200 overflow-x-auto no-scrollbar">
+            </div>
             <div class="flex-1 overflow-y-auto bg-white">
                 <table class="w-full text-left table-bordered table-hover">
                     <thead class="sticky top-0 bg-slate-800 text-white text-[11px] font-bold z-10">
                         <tr>
-                            <th class="px-6 py-3 w-16 text-center">狀態</th>
+                            <th class="px-6 py-3 w-16 text-center">
+                                <input type="checkbox" id="pickerSelectAll" onchange="togglePickerSelectAll(this)"
+                                    class="w-4 h-4 rounded accent-blue-400">
+                            </th>
                             <th class="px-6 py-3 w-36">編號</th>
                             <th class="px-6 py-3">成品品名</th>
                             <th class="px-6 py-3 w-24 text-center">單位</th>
@@ -191,8 +262,10 @@
                     <span class="text-white font-black text-2xl" id="pickerSelectCount">0</span>
                 </div>
                 <div class="flex gap-3">
-                    <button onclick="closePicker()" class="px-6 py-3 font-bold text-slate-400 hover:text-slate-600 transition-colors">取消</button>
-                    <button onclick="confirmSelection()" class="bg-blue-600 text-white px-12 py-3 rounded-2xl font-black shadow-xl hover:bg-blue-800 transition-all">確認加入排產</button>
+                    <button onclick="closePicker()"
+                        class="px-6 py-3 font-bold text-slate-400 hover:text-slate-600 transition-colors">取消</button>
+                    <button onclick="confirmSelection()"
+                        class="bg-blue-600 text-white px-12 py-3 rounded-2xl font-black shadow-xl hover:bg-blue-800 transition-all">確認加入排產</button>
                 </div>
             </div>
         </div>
@@ -205,15 +278,28 @@
             "FAY": "理貨挑秤線",
             "FAZ": "理貨"
         };
-        
+
         let masterDB = [];
-        let selectionQueue = []; 
+        let selectionQueue = [];
         let currentPickerGroup = "ALL";
 
         window.onload = () => {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('orderDate').value = today;
             loadData();
+
+            // Enter 鍵自動跳下一列
+            document.getElementById('productionBody').addEventListener('keydown', (e) => {
+                if (e.target.classList.contains('row-qty') && e.key === 'Enter') {
+                    e.preventDefault();
+                    const inputs = Array.from(document.querySelectorAll('#productionBody tr:not(.hidden) .row-qty'));
+                    const index = inputs.indexOf(e.target);
+                    if (index > -1 && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                        inputs[index + 1].select();
+                    }
+                }
+            });
         };
 
         function switchTab(tab) {
@@ -221,7 +307,7 @@
             document.getElementById(`tab-${tab}`).classList.remove('hidden');
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('tab-active'));
             document.getElementById(`btn-${tab}`).classList.add('tab-active');
-            if(tab === 'back') renderDBList();
+            if (tab === 'back') renderDBList();
         }
 
         function loadData() {
@@ -250,20 +336,20 @@
             const rows = document.querySelectorAll('#productionBody tr');
             const groups = new Set();
             rows.forEach(r => groups.add(r.dataset.group));
-            
+
             const filter = document.getElementById('frontGroupFilter');
             const currentVal = filter.value;
             filter.innerHTML = '<option value="ALL">全部顯示</option>';
-            
+
             Array.from(groups).sort().forEach(g => {
                 const opt = document.createElement('option');
                 opt.value = g; opt.innerText = g;
                 filter.appendChild(opt);
             });
-            
-            if(groups.has(currentVal)) filter.value = currentVal;
+
+            if (groups.has(currentVal)) filter.value = currentVal;
             else filter.value = "ALL";
-            
+
             filterFrontTable();
         }
 
@@ -280,7 +366,7 @@
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(evt) {
+            reader.onload = function (evt) {
                 const workbook = XLSX.read(evt.target.result, { type: 'binary' });
                 const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                 masterDB = rows.map(r => ({
@@ -325,7 +411,7 @@
         }
 
         function openPicker() {
-            if(masterDB.length === 0) return showToast("請先匯入品項", "⚠️");
+            if (masterDB.length === 0) return showToast("請先匯入品項", "⚠️");
             selectionQueue = [];
             currentPickerGroup = "ALL";
             document.getElementById('pickerModal').classList.remove('hidden');
@@ -341,29 +427,38 @@
             groups.forEach(g => {
                 const btn = document.createElement('button');
                 btn.className = `px-6 py-4 text-sm font-black transition-all border-b-4 border-transparent text-slate-400`;
-                if(g === currentPickerGroup) btn.classList.add('picker-tab-active');
+                if (g === currentPickerGroup) btn.classList.add('picker-tab-active');
                 btn.innerText = g === "ALL" ? "全部" : g;
                 btn.onclick = () => { currentPickerGroup = g; renderPickerTabs(); renderPickerItems(); };
                 container.appendChild(btn);
             });
         }
 
-        function renderPickerItems() {
+        function getFilteredPickerItems() {
             const kw = document.getElementById('pickerSearch').value.toLowerCase();
+            let filtered = masterDB;
+            if (currentPickerGroup !== "ALL") filtered = filtered.filter(i => i.group === currentPickerGroup);
+            if (kw) filtered = filtered.filter(i => i.name.toLowerCase().includes(kw) || i.id.toLowerCase().includes(kw));
+            return filtered;
+        }
+
+        function renderPickerItems() {
+            const filtered = getFilteredPickerItems();
             const tbody = document.getElementById('pickerListBody');
             tbody.innerHTML = '';
-            let filtered = masterDB;
-            if(currentPickerGroup !== "ALL") filtered = filtered.filter(i => i.group === currentPickerGroup);
-            if(kw) filtered = filtered.filter(i => i.name.toLowerCase().includes(kw) || i.id.toLowerCase().includes(kw));
+
+            let allInQueue = filtered.length > 0;
 
             filtered.forEach(item => {
                 const compositeKey = `${item.id}|${item.unit}`;
                 const isSelected = selectionQueue.indexOf(compositeKey) > -1;
+                if (!isSelected) allInQueue = false;
+
                 const tr = document.createElement('tr');
                 tr.className = `cursor-pointer hover:bg-blue-50 ${isSelected ? 'bg-blue-50/80' : ''}`;
                 tr.onclick = () => {
                     const idx = selectionQueue.indexOf(compositeKey);
-                    if(idx > -1) selectionQueue.splice(idx, 1);
+                    if (idx > -1) selectionQueue.splice(idx, 1);
                     else selectionQueue.push(compositeKey);
                     renderPickerItems();
                     updatePickerUI();
@@ -379,6 +474,23 @@
                 `;
                 tbody.appendChild(tr);
             });
+
+            document.getElementById('pickerSelectAll').checked = allInQueue;
+        }
+
+        function togglePickerSelectAll(el) {
+            const items = getFilteredPickerItems();
+            items.forEach(item => {
+                const compositeKey = `${item.id}|${item.unit}`;
+                const idx = selectionQueue.indexOf(compositeKey);
+                if (el.checked) {
+                    if (idx === -1) selectionQueue.push(compositeKey);
+                } else {
+                    if (idx > -1) selectionQueue.splice(idx, 1);
+                }
+            });
+            renderPickerItems();
+            updatePickerUI();
         }
 
         function updatePickerUI() {
@@ -388,21 +500,21 @@
         function closePicker() { document.getElementById('pickerModal').classList.add('hidden'); }
 
         function confirmSelection() {
-            if(selectionQueue.length === 0) return closePicker();
+            if (selectionQueue.length === 0) return closePicker();
             const tbody = document.getElementById('productionBody');
             document.getElementById('emptyState').classList.add('hidden');
 
             selectionQueue.forEach(key => {
                 const [id, unit] = key.split('|');
                 const item = masterDB.find(i => i.id === id && i.unit === unit);
-                if(!item) return;
+                if (!item) return;
 
                 const tr = document.createElement('tr');
                 tr.dataset.id = item.id;
                 tr.dataset.unit = item.unit;
                 tr.dataset.group = item.group;
                 tr.className = "hover:bg-blue-50/30 transition-all";
-                
+
                 // 生產線下拉選單 HTML
                 let lineOptions = "";
                 Object.keys(LINE_MAP).forEach(code => {
@@ -426,7 +538,7 @@
                 `;
                 tbody.appendChild(tr);
             });
-            
+
             closePicker();
             updateFrontGroupFilter();
             updateSelUI();
@@ -436,8 +548,24 @@
 
         function updateSelUI() {
             const checks = document.querySelectorAll('.row-check:checked');
-            document.getElementById('selCount').innerText = checks.length;
-            document.getElementById('delBtn').classList.toggle('hidden', checks.length === 0);
+            const count = checks.length;
+            document.getElementById('selCount').innerText = count;
+            document.getElementById('batchActions').classList.toggle('hidden', count === 0);
+        }
+
+        function applyBatchLine() {
+            const line = document.getElementById('batchLine').value;
+            if (!line) return showToast("請先選擇生產線", "⚠️");
+
+            const selectedChecks = document.querySelectorAll('.row-check:checked');
+            selectedChecks.forEach(chk => {
+                const row = chk.closest('tr');
+                const select = row.querySelector('.row-line');
+                if (select) select.value = line;
+            });
+
+            showToast(`已更新 ${selectedChecks.length} 筆產線`, "✅");
+            document.getElementById('batchLine').value = "";
         }
 
         function toggleSelectAll(el) {
@@ -447,12 +575,12 @@
         }
 
         function deleteSelected() {
-            if(confirm("確定移除勾選的項目？")) {
+            if (confirm("確定移除勾選的項目？")) {
                 document.querySelectorAll('.row-check:checked').forEach(c => c.closest('tr').remove());
                 updateFrontGroupFilter();
                 updateSelUI();
                 updateStats();
-                if(document.getElementById('productionBody').children.length === 0) document.getElementById('emptyState').classList.remove('hidden');
+                if (document.getElementById('productionBody').children.length === 0) document.getElementById('emptyState').classList.remove('hidden');
             }
         }
 
@@ -464,34 +592,52 @@
         function exportExcel() {
             const allRows = document.querySelectorAll('#productionBody tr');
             if (allRows.length === 0) return showToast("清單目前無資料", "❌");
-            
+
             const selectedChecks = document.querySelectorAll('#productionBody tr .row-check:checked');
             let targetRows = [];
             if (selectedChecks.length > 0) {
                 selectedChecks.forEach(chk => targetRows.push(chk.closest('tr')));
             } else {
-                allRows.forEach(row => { if(!row.classList.contains('hidden')) targetRows.push(row); });
+                allRows.forEach(row => { if (!row.classList.contains('hidden')) targetRows.push(row); });
+            }
+
+            // 防呆檢查：確保預計產量均已填寫
+            let invalidRows = [];
+            targetRows.forEach(r => {
+                const qty = r.querySelector('.row-qty').value;
+                if (!qty || parseFloat(qty) <= 0) {
+                    invalidRows.push(r);
+                    r.classList.add('bg-rose-50');
+                } else {
+                    r.classList.remove('bg-rose-50');
+                }
+            });
+
+            if (invalidRows.length > 0) {
+                invalidRows[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                invalidRows[0].querySelector('.row-qty').focus();
+                return showToast(`有 ${invalidRows.length} 筆項目未填寫產量或數值錯誤`, "⚠️");
             }
 
             const date = document.getElementById('orderDate').value.replace(/-/g, '/');
             const exportData = [["預計開工日", "性質", "重工工單", "客戶代號", "廠別代號", "生產線代號", "廠商代號", "成品品項", "成品品名", "規格代號", "規格單位", "等級", "倉庫代號", "倉庫名稱", "預計產量", "加工單價", "單據備註"]];
-            
+
             targetRows.forEach(r => {
                 const id = r.dataset.id;
                 const unit = r.dataset.unit;
                 const m = masterDB.find(i => i.id === id && i.unit === unit) || {};
                 exportData.push([
-                    date, "廠內", r.querySelector('.row-rework').checked ? "Y" : "N", "", "FA", 
+                    date, "廠內", r.querySelector('.row-rework').checked ? "Y" : "N", "", "FA",
                     r.querySelector('.row-line').value, "", id, r.querySelector('.row-name').innerText,
                     m.specCode || "01", unit, "", "A202", "",
-                    r.querySelector('.row-qty').value || 0, "", r.querySelector('.row-note').value
+                    r.querySelector('.row-qty').value, "", r.querySelector('.row-note').value
                 ]);
             });
 
             const ws = XLSX.utils.aoa_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "ProdOrder");
-            XLSX.writeFile(wb, `生產工單_${date.replace(/\//g,'')}.xlsx`);
+            XLSX.writeFile(wb, `生產工單_${date.replace(/\//g, '')}.xlsx`);
             showToast("匯出完成", "📊");
         }
 
@@ -504,8 +650,9 @@
         }
 
         function clearDatabase() {
-            if(confirm("確定清空所有資料？")) { masterDB = []; saveData(); renderDBList(); }
+            if (confirm("確定清空所有資料？")) { masterDB = []; saveData(); renderDBList(); }
         }
     </script>
 </body>
+
 </html>
